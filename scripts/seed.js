@@ -1,23 +1,16 @@
 import { MongoClient } from "mongodb"
-import assert from "node:assert"
-import { argv } from "node:process"
+import { loadEnvFile } from "node:process"
 
-const [_, __, database, collection, host, port] = argv
-const url = `mongodb://${host ?? "localhost"}:${port ?? "27017"}/${database}`
+loadEnvFile(".env")
 
-assert(database, "database wasn't provided as the first argument in argv")
-assert(collection, "collection wasn't provided as the second argument in argv")
-
+const url = `mongodb://${process.env.HOSTNAME}:${process.env.PORT}/${process.env.DATABASE}`
 const client = new MongoClient(url)
-
-console.log(url)
-console.log(`collection: ${collection}`)
 
 async function main() {
     try {
         await client.connect()
         console.log("connect OK")
-        await client.db().collection(collection).insertMany(
+        await client.db().collection(process.env.COLLECTION).insertMany(
             [
                 {
                     title: "Inception",
