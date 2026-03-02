@@ -1,23 +1,30 @@
-import { MongoClient } from "mongodb"
-import { argv } from "node:process"
+db = db.getSiblingDB('filmy_bs');
 
-const [ _, __, database, collection, host, port ] = argv
-const url = `mongodb://${host ?? "localhost"}:${port ?? "27017"}/${database}`
+print("FILMY AKCJI PRZED 2000 (Bo nie ma żadnych po 2020): ")
+db.filmy.find({
+    genres: "Action",
+    releaseDate: { $lt: "31-12-2000" }
+}).forEach(doc => printjson(doc))
 
-assert(database, "database wasn't provided as the first argument in argv")
-assert(collection, "collection wasn't provided as the second argument in argv")
-
-const client = new MongoClient(url)
-
-console.log(url)
-
-async function main() {
-    try {
-        await client.connect()
-        console.log("connect OK")
-    } finally {
-        await client.close()
+print("\nŚREDNIA OCEN FILMÓW: ")
+db.filmy.aggregate([
+    {
+        $unwind: "$reviews"
+    },
+    {
+        $group: {
+            _id: null,
+            average: { $avg: "$reviews.ocena" }
+        }
     }
-}
+]).forEach(doc => printjson(doc.average))
 
-main().catch(console.log)
+print("\nLICZBA WYŚWIETLEŃ DLA REŻYSERÓw ")
+db.filmy.aggregate([
+    {
+        $group: {
+            _id: "$director",
+            totalViews: { $sum: "$views" }
+        }
+    }
+]).forEach(doc => printjson(doc))
