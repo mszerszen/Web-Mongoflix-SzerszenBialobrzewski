@@ -1,10 +1,27 @@
 db = db.getSiblingDB('filmy_bs');
 
-print("FILMY AKCJI PRZED 2000 (Bo nie ma żadnych po 2020): ")
-db.filmy.find({
-    genres: "Action",
-    releaseDate: { $lt: "31-12-2000" }
-}).forEach(doc => printjson(doc))
+print("FILMY AKCJI PO 2000 (Bo nie ma żadnych po 2020): ")
+db.filmy.aggregate([
+    { $match: { genres: "Action" } },
+    {
+        $addFields: {
+            releaseYear: {
+                $toInt: {
+                    $substrCP: [
+                        "$releaseDate",
+                        { $subtract: [ { $strLenCP: "$releaseDate" }, 4 ] },
+                        4
+                    ]
+                }
+            }
+        }
+    },
+    {
+        $match: {
+            releaseYear: { $gt: 2000 }
+        }
+    }
+]).forEach(doc => printjson(doc))
 
 print("\nŚREDNIA OCEN FILMÓW: ")
 db.filmy.aggregate([
