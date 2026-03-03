@@ -1,40 +1,44 @@
 db = db.getSiblingDB('filmy_bs');
 
-print("FILMY AKCJI PO 2000 (Bo nie ma żadnych po 2020): ")
-db.filmy.aggregate([
-    { $match: { genres: "Action" } },
-    {
-        $addFields: {
-            releaseYear: {
-                $toInt: {
-                    $substrCP: [
-                        "$releaseDate",
-                        { $subtract: [ { $strLenCP: "$releaseDate" }, 4 ] },
-                        4
-                    ]
-                }
-            }
-        }
-    },
-    {
-        $match: {
-            releaseYear: { $gt: 2000 }
-        }
-    }
-]).forEach(doc => printjson(doc))
+const genre = "Sci-Fi";
+const year = 2008;
 
-print("\nŚREDNIA OCEN FILMÓW: ")
+print("SZUKANIE PO GATUNKU")
+db.filmy.find(
+    { genres: genre },
+    { title: 1, genres: 1, _id: 0 }
+);
+
+print("\nFILTROWANIE PO ROKU")
+db.filmy.find(
+    { releaseYear: genre },
+    { title: 1, genres: 1, _id: 0 }
+);
+
+print("\nŚREDNIA OCEN DLA KAŻDEGO GATUNKU")
 db.filmy.aggregate([
-    {
-        $unwind: "$reviews"
-    },
+    { $unwind: "$genres" },
+    { $unwind: "$reviews" },
     {
         $group: {
-            _id: null,
-            average: { $avg: "$reviews.ocena" }
+            _id: "$genres",
+            averageRating: { $avg: "$reviews.ocena" }
+        }
+    },
+    {
+        $project: {
+            _id: 0,
+            genre: "$_id",
+            averageRating: { $round: ["$averageRating", 2] }
         }
     }
-]).forEach(doc => printjson(doc.average))
+]);
+
+print("\nDODANIE FILMÓW FEATURED")
+db.filmy.updateMany(
+    { views: { $gt: 1200000 } },
+    { $set: { featured: true } }
+);
 
 print("\nLICZBA WYŚWIETLEŃ DLA REŻYSERÓw ")
 db.filmy.aggregate([
